@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTRIP Client Control</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f4f6f8;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h2, h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        form {
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #controls button {
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Enter NTRIP Client Credentials</h2>
+        <form id="ntripForm">
+            <label for="arquivo">Nome de arquivo:</label>
+            <input type="text" id="arquivo" name="arquivo" required>
+
+            <label for="user">Usuário NTRIP:</label>
+            <input type="text" id="user" name="user" required>
+
+            <label for="password">Senha:</label>
+            <input type="text" id="password" name="password" required>
+
+            <label for="host">Host NTRIP:</label>
+            <input type="text" id="host" name="host" required>
+
+            <label for="port">Porta:</label>
+            <input type="text" id="port" name="port" maxlength="5" required>
+
+            <label for="mountpoint">MountPoint:</label>
+            <input type="text" id="mountpoint" name="mountpoint" required>
+
+            <button id="validate" type="submit">Validar</button>
+
+            <div id="selectCountDown" style="display: none;">
+                <button type="submit" data-minutes="1">botao teste</button>
+                <button type="submit" data-minutes="10">10 Minutos</button>
+                <button type="submit" data-minutes="30">30 Minutos</button>
+                <button type="submit" data-minutes="60">1 Hora</button>
+            </div>
+        
+            <div id="statusMessage" style="color: red; margin-top: 10px;"></div>
+        </form>
+
+        <div id="controls">
+            <button id="translateButton" style="display: none;">Traduzir para Rinex</button>
+            <a id="downloadOBS" href="#" download style="display:none;"><button>Download OBS</button></a>
+            <a id="downloadNAV" href="#" download style="display:none;"><button>Download NAV</button></a>
+
+        </div>
+
+    <p id="timer"></p>
+    
+    <script>
+    let arquivo = "";
+    let ntimer = 10;
+    document.querySelectorAll('#selectCountDown button').forEach(button => {
+    button.addEventListener('click', function() {
+        ntimer = parseInt(this.getAttribute('data-minutes')) * 60;
+        });
+    });
+    document.getElementById("ntripForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    arquivo = document.getElementById("arquivo").value;
+    var user = document.getElementById("user").value;
+    var password = document.getElementById("password").value;
+    var host = document.getElementById("host").value;
+    var port = document.getElementById("port").value;
+    var mountpoint = document.getElementById("mountpoint").value;
+
+    document.getElementById("statusMessage").textContent = "";
+
+    fetch('/run_ntrip', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `arquivo=${encodeURIComponent(arquivo)}&user=${encodeURIComponent(user)}&password=${encodeURIComponent(password)}&host=${encodeURIComponent(host)}&port=${encodeURIComponent(port)}&mountpoint=${encodeURIComponent(mountpoint)}&ntimer=${encodeURIComponent(ntimer)}`
+    })
+    .then(response => {
+        console.log('Response Status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response Data:', data);
+        if (data.message) {
+            document.getElementById("statusMessage").textContent = data.message;
+            document.getElementById("statusMessage").style.color = "green";
+            document.getElementById("validate").style.display = 'none';
+            document.getElementById("selectCountDown").style.display = 'inline';
+            let countDownInterval;
+
+            document.querySelectorAll('#selectCountDown button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const minutes = parseInt(this.getAttribute('data-minutes'));
+
+                    clearInterval(countDownInterval);
+
+                    const countDownDate = new Date().getTime() + minutes * 60 * 1000;
+                    document.getElementById("selectCountDown").style.display = 'none';
+
+                    countDownInterval = setInterval(function () {
+                        const now = new Date().getTime();
+                        const distance = countDownDate - now;
+
+                        const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const secs = Math.floor((distance % (1000 * 60)) / 1000);
+
+                        document.getElementById("timer").innerHTML = mins + "m " + secs + "s";
+
+                        if (distance < 0) {
+                            clearInterval(countDownInterval);
+                            document.getElementById("timer").innerHTML = "Transmissão Finalizada";
+                            document.getElementById("translateButton").style.display = 'inline';
+
+                        }
+                    }, 1000);
+                });
+            });
+        } else if (data.error) {
+            document.getElementById("statusMessage").textContent = "Error: " + data.error;
+            document.getElementById("statusMessage").style.color = "red";
+        }
+    })
+    .catch(error => {
+        document.getElementById("statusMessage").textContent = "Error: " + error.message;
+        document.getElementById("statusMessage").style.color = "red";
+    });
+});
+
+document.getElementById("translateButton").addEventListener("click", function() {
+
+    fetch('/translate_rinex', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `arquivo=${encodeURIComponent(arquivo)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            document.getElementById("downloadOBS").href = `/documents/${arquivo}_obs.20o`;
+            document.getElementById("downloadNAV").href = `/documents/${arquivo}_nav.nav`;
+            document.getElementById("downloadOBS").style.display = 'inline';
+            document.getElementById("downloadNAV").style.display = 'inline';
+        } else if (data.error) {
+            document.getElementById("statusMessage").textContent = "Error: " + data.error;
+            document.getElementById("statusMessage").style.color = "red";
+        }
+    })
+    .catch(error => {
+        document.getElementById("statusMessage").textContent = "Error: " + error.message;
+        document.getElementById("statusMessage").style.color = "red";
+    });
+});
+
+    </script>
+</body>
+</html>
