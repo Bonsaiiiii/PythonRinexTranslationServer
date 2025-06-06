@@ -8,33 +8,55 @@ app = Flask(__name__)
 
 process = None
 
+@app.after_request
+def after_request(response):
+    response.headers['Content-Type'] = 'text/html; charset=UTF-8'
+    return response
+
 @app.route('/')
 def index():
-    return open("index.html").read()
+    return open("index.html", encoding="utf-8").read()
 
 @app.route('/run_ntrip', methods=['POST'])
 def run_ntrip():
     global process
 
-    arquivo = request.form.get('arquivo')
-    user = request.form.get('user')
-    password = request.form.get('password')
-    host = request.form.get('host')
-    port = request.form.get('port')
-    mountpoint = request.form.get('mountpoint')
-    ntimer = request.form.get('ntimer')
+    arquivo = request.form.get('arquivo', '').strip()
+    user = request.form.get('user', '').strip()
+    password = request.form.get('password', '').strip()
+    host = request.form.get('host', '').strip()
+    port = request.form.get('port', '').strip()
+    mountpoint = request.form.get('mountpoint', '').strip()
+    latitude = request.form.get('latitude', '').strip()
+    longitude = request.form.get('longitude', '').strip()
+    altitude = request.form.get('altitude', '').strip()
+    ntimer = request.form.get('ntimer', '').strip()
+    enviapos = request.form.get('enviapos', '').strip()
 
     if not user or not password:
         return jsonify({"error": "User and Password are required!"}), 400
 
-    command = [
-        "python3", "NtripClient.py",
-        "--user=" + user,
-        "--password=" + password,
-        "--maxtime=" + ntimer,
-        host, port, mountpoint,
-        "-f", os.path.join("C:/Users/Hugen/Documents/", arquivo + ".rtcm")
-    ]
+    if enviapos == 'N':
+        command = [
+            "python3", "NtripClient.py",
+            "--user=" + user,
+            "--password=" + password,
+            "--maxtime=" + ntimer,
+            host, port, mountpoint,
+            "-f", os.path.join("C:/Users/Hugen/Documents/", arquivo + ".rtcm")
+        ]
+    elif enviapos == 'S':
+        command = [
+            "python3", "NtripClient.py",
+            "--user=" + user,
+            "--password=" + password,
+            "--latitude=" + latitude,
+            "--longitude=" + longitude,
+            "--height=" + altitude,
+            "--maxtime=" + ntimer,
+            host, port, mountpoint,
+            "-f", os.path.join("C:/Users/Hugen/Documents/", arquivo + ".rtcm")
+        ]
     
     try:
         if platform.system() == "Windows":
@@ -52,26 +74,6 @@ def run_ntrip():
 
     except Exception as e:
         return jsonify({"error": f"Error starting NTRIP Client: {str(e)}"}), 500
-
-@app.route('/stop_ntrip', methods=['POST'])
-def stop_ntrip():
-    global process
-
-    if process is None:
-        return jsonify({"error": "NTRIP Client is not running!"}), 400
-
-    try:
-        if platform.system() == "Windows":
-            process.send_signal(signal.CTRL_BREAK_EVENT)
-        else:
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-
-        process.wait(timeout=5)
-        process = None
-        return jsonify({"message": "NTRIP Client stopped successfully!"}), 200
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to stop NTRIP Client: {str(e)}"}), 500
         
 @app.route('/translate_rinex', methods=['POST'])
 def translate_rinex():

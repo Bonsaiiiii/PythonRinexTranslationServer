@@ -11,11 +11,11 @@ parser.add_argument('--gnav', required=True, help='Name of the GNAV file (withou
 parser.add_argument('--qnav', required=True, help='Name of the QNAV file (without extension)')
 args = parser.parse_args()
 
-rtklib_path = 'C:\\Users\\Hugen\\Documents\\RTKLIB_bin-rtklib_2.4.3\\bin\\convbin.exe'
+rtklib_path = 'C:\\Users\\Hugen\\Documents\\RTKLIB_2.4.3_b34\\bin\\convbin.exe'
 
 input_file = 'C:\\Users\\Hugen\\Documents\\' + args.input + '.rtcm'
 
-output_file = 'C:\\Users\\Hugen\\Documents\\' + args.output + '.20o'
+output_file = 'C:\\Users\\Hugen\\Documents\\' + args.output + '.25o'
 
 nav_file = 'C:\\Users\\Hugen\\Documents\\' + args.nav + '.nav'
 gnav_file = 'C:\\Users\\Hugen\\Documents\\' + args.gnav + '.25g'
@@ -26,8 +26,11 @@ command = [
     '-v', '3.04',
     '-r', 'rtcm3',
     '-tr', '2022/3/24 0:0:0',
-    '-os',
     '-od',
+    '-os',
+    '-oi',
+    '-ot',
+    '-ol',
     '-o', output_file,
     '-n', nav_file,
     '-g', gnav_file,
@@ -55,7 +58,7 @@ else:
 # import subprocess
 # import time
 #
-# # "C:\\Users\\Hugen\\Documents\\RTKLIB_bin-rtklib_2.4.3\\bin\\convbin.exe" ^ -v 3.04 ^ -r rtcm3 ^ -ts "2025/05/23 16:29:10" ^ -od ^ -os ^ -oi ^ -ot ^ -ol ^ -o "C:\\Users\\Hugen\\Documents\\output.20o" ^ -n "C:\\Users\\Hugen\\Documents\\navfile.nav" ^ -g "C:\\Users\\Hugen\\Documents\\gnavfile.25g" ^ -q "C:\\Users\\Hugen\\Documents\\qnavfile.25q" ^ "C:\\Users\\Hugen\\Documents\\output.rtcm"
+# # "C:\\Users\\Hugen\\Documents\\RTKLIB_bin-rtklib_2.4.3\\bin\\convbin.exe" ^ -v 3.04 ^ -r rtcm3 ^ -tr "2025/05/23 16:29:10" ^ -od ^ -os ^ -oi ^ -ot ^ -ol ^ -o "C:\\Users\\Hugen\\Documents\\output.20o" ^ -n "C:\\Users\\Hugen\\Documents\\navfile.nav" ^ -g "C:\\Users\\Hugen\\Documents\\gnavfile.25g" ^ -q "C:\\Users\\Hugen\\Documents\\qnavfile.25q" ^ "C:\\Users\\Hugen\\Documents\\output.rtcm"
 #
 # rtklib_path = 'C:\\Users\\Hugen\\Documents\\RTKLIB_bin-rtklib_2.4.3\\bin\\convbin.exe'  # Adjust path based on where RTKLIB is installed
 #

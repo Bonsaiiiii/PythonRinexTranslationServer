@@ -5,63 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NTRIP Client Control</title>
     <style>
+        :root {
+            --primary-color: #007BFF;
+            --secondary-color: #0056b3;
+            --background-color: #f4f6f8;
+            --container-bg: #fff;
+            --text-color: #333;
+            --border-radius: 12px;
+            --box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
-            padding: 0;
-            height: 100vh;
+            padding: 20px;
+            background-color: var(--background-color);
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
             display: flex;
-            align-items: center;
             justify-content: center;
-            background-color: #f4f6f8;
-            font-family: Arial, sans-serif;
+            align-items: center;
+            min-height: 100vh;
         }
 
         .container {
-            background-color: #ffffff;
-            padding: 30px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
+            background-color: var(--container-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
             width: 100%;
+            max-width: 550px;
+            transition: transform 0.3s ease;
         }
 
-        h2, h3 {
-            color: #333;
-            margin-bottom: 20px;
+        .container:hover {
+            transform: translateY(-2px);
         }
 
-        form {
-            text-align: left;
+        h2 {
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 30px;
         }
 
         label {
             display: block;
-            margin-top: 10px;
-            font-weight: bold;
+            margin-top: 15px;
+            font-weight: 600;
+            color: var(--text-color);
         }
 
-        input[type="text"] {
+        input[type="text"], select {
             width: 100%;
-            padding: 8px;
+            padding: 10px 14px;
             margin-top: 5px;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            background-color: #fff;
         }
 
         button {
             margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: #fff;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
             transition: background-color 0.3s ease;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: var(--secondary-color);
         }
 
         #controls button {
@@ -69,11 +94,43 @@
             margin-top: 10px;
         }
 
+        a button {
+            background-color: #28a745;
+        }
+
+        a button:hover {
+            background-color: #1e7e34;
+        }
+
+        #statusMessage {
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        #timer {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        #geoerr {
+            color: red;
+            margin-top: 5px;
+        }
+
+        #selectCountDown button {
+            background-color: #6c757d;
+        }
+
+        #selectCountDown button:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Enter NTRIP Client Credentials</h2>
+        <h2>Insira as credenciais NTRIP Client</h2>
         <form id="ntripForm">
             <label for="arquivo">Nome de arquivo:</label>
             <input type="text" id="arquivo" name="arquivo" required>
@@ -92,6 +149,60 @@
 
             <label for="mountpoint">MountPoint:</label>
             <input type="text" id="mountpoint" name="mountpoint" required>
+
+            <label for="saidaonoff" class="form-label">Enviar posição?</label>
+              <select class="form-select" id="enviapos" name="enviapos">
+                <option value="N">Não</option>
+                <option value="S">Sim</option>
+            </select>
+
+            <label for="latitude">Latitude:</label>
+            <input type="text" id="latitude" name="latitude">
+
+            <label for="longitude">Longitude:</label>
+            <input type="text" id="longitude" name="longitude">
+
+            <label for="altitude">Altitude (indisponível em alguns dispositivos):</label>
+            <input type="text" id="altitude" name="altitude">
+
+            <button type="button" onclick="getLocation()">Buscar localização</button>
+
+            <p id="geoerr"></p>
+
+            <script>
+            const x = document.getElementById("geoerr");
+
+            function getLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(requestLoc, showError);
+                } else { 
+                    x.innerHTML = "Geolocalização não suportada por esse navegador.";
+                }
+            }
+
+            function requestLoc(position) {
+                document.getElementById("latitude").value = position.coords.latitude;
+                document.getElementById("longitude").value = position.coords.longitude;
+                document.getElementById("altitude").value = position.coords.altitude ?? "0";
+            }
+
+            function showError(error) {
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                    x.innerHTML = "Requisição de geolocalização negada."
+                    break;
+                    case error.POSITION_UNAVAILABLE:
+                    x.innerHTML = "Informação de localização está indisponível."
+                    break;
+                    case error.TIMEOUT:
+                    x.innerHTML = "A requisição para adquirir a localização expirou."
+                    break;
+                    case error.UNKNOWN_ERROR:
+                    x.innerHTML = "Um erro desconhecido ocorreu."
+                    break;
+                }
+            }
+            </script>
 
             <button id="validate" type="submit">Validar</button>
 
@@ -131,6 +242,10 @@
     var host = document.getElementById("host").value;
     var port = document.getElementById("port").value;
     var mountpoint = document.getElementById("mountpoint").value;
+    var enviapos = document.getElementById("enviapos").value;
+    var latitude = document.getElementById("latitude").value;
+    var longitude = document.getElementById("longitude").value;
+    var altitude = document.getElementById("altitude").value;
 
     document.getElementById("statusMessage").textContent = "";
 
@@ -139,7 +254,10 @@
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `arquivo=${encodeURIComponent(arquivo)}&user=${encodeURIComponent(user)}&password=${encodeURIComponent(password)}&host=${encodeURIComponent(host)}&port=${encodeURIComponent(port)}&mountpoint=${encodeURIComponent(mountpoint)}&ntimer=${encodeURIComponent(ntimer)}`
+        body: `arquivo=${encodeURIComponent(arquivo)}&user=${encodeURIComponent(user)}&password=${encodeURIComponent(password)}
+        &host=${encodeURIComponent(host)}&port=${encodeURIComponent(port)}&mountpoint=${encodeURIComponent(mountpoint)}
+        &enviapos=${encodeURIComponent(enviapos)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}
+        &altitude=${encodeURIComponent(altitude)}&ntimer=${encodeURIComponent(ntimer)}`
     })
     .then(response => {
         console.log('Response Status:', response.status);
